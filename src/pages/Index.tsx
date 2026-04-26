@@ -1,16 +1,37 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { motion } from "framer-motion";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { StatsStrip } from "@/components/landing/StatsStrip";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
+import { LiveDemo } from "@/components/landing/LiveDemo";
+import { PricingSection } from "@/components/landing/PricingSection";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { TechStack } from "@/components/landing/TechStack";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="flex-1"
+      >
+        <HeroSection />
+        <StatsStrip />
+        <HowItWorks />
+        <FeaturesGrid />
+        <LiveDemo />
+        <PricingSection />
+        <Testimonials />
+        <TechStack />
+      </motion.main>
+      <Footer />
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
