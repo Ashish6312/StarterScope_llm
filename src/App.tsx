@@ -13,10 +13,12 @@ import Roadmap from "./pages/Roadmap";
 import Contact from "./pages/Contact";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import { Chatbot } from "@/components/chatbot/Chatbot";
+import { ScrollToHash } from "@/components/ScrollToHash";
 
 const App = () => (
   <ClientProviders>
     <BrowserRouter>
+      <ScrollToHash />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route

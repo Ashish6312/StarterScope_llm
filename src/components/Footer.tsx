@@ -4,7 +4,7 @@ import { Hexagon, Github, Heart, Linkedin, Twitter } from "lucide-react";
 const productLinks = [
   { label: "Features", to: "/#features" },
   { label: "Dashboard", to: "/dashboard" },
-  { label: "Pricing", to: "/acquisition-tiers" },
+  { label: "Pricing", to: "/#pricing" },
   { label: "Roadmap", to: "/roadmap" },
 ];
 
