@@ -9,11 +9,14 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+DATABASE_URL = os.getenv("DATABASE_URL", os.getenv("POSTGRES_URL", ""))
 GOOGLE_CLOUD_SQL_CONNECTION_NAME = os.getenv("GOOGLE_CLOUD_SQL_CONNECTION_NAME")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "business_intelligence")
+
+# Vercel environments are read-only; we cannot use SQLite.
+IS_VERCEL = os.getenv("VERCEL") == "1" or os.getenv("VERCEL_URL") is not None
 
 connect_args = {}
 engine_kwargs = {}
@@ -50,9 +53,14 @@ elif DATABASE_URL:
         logger.info("Using PostgreSQL database (pg8000)")
 
 else:
-    DATABASE_URL = "sqlite:///./sql_app.db"
-    connect_args = {"check_same_thread": False}
-    logger.warning("FORCED SQLITE FOR STABILITY TEST")
+    if IS_VERCEL:
+        logger.error("FATAL: Running on Vercel but no DATABASE_URL or POSTGRES_URL found. Database will NOT work.")
+        # We don't raise immediately here so the app can start, but DB operations will fail gracefully
+        DATABASE_URL = "postgresql+pg8000://invalid:invalid@localhost/invalid"
+    else:
+        DATABASE_URL = "sqlite:///./sql_app.db"
+        connect_args = {"check_same_thread": False}
+        logger.warning("FORCED SQLITE FOR STABILITY TEST")
 
 # Engine settings
 if "sqlite" in DATABASE_URL:
