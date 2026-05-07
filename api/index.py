@@ -651,13 +651,14 @@ async def app_lifespan(app: FastAPI):
 
 app.router.lifespan_context = app_lifespan
 
-# Try to import models
+models_available = False
 try:
     import models
     models_available = True
     logger.info("✅ Models imported successfully")
 except Exception as e:
     logger.error(f"⚠️ Models import failed: {e}")
+    models_available = False
     models_available = False
 
 # Try to import recommendation engines
