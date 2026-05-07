@@ -75,21 +75,104 @@ const mockRecommendations: Recommendation[] = [
   },
 ];
 
+function normalizeRisk(val: unknown): Recommendation["risk"] {
+  if (val === "Low" || val === "Medium" || val === "High") return val;
+  if (typeof val === "string") {
+    const v = val.toLowerCase();
+    if (v.includes("low")) return "Low";
+    if (v.includes("high")) return "High";
+  }
+  return "Medium";
+}
+
+function normalizeRecommendation(raw: unknown, idx: number): Recommendation | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+
+  const name =
+    (typeof r.name === "string" && r.name) ||
+    (typeof r.title === "string" && r.title) ||
+    (typeof r.business_name === "string" && r.business_name) ||
+    `Opportunity ${idx + 1}`;
+
+  const category =
+    (typeof r.category === "string" && r.category) ||
+    (typeof r.industry === "string" && r.industry) ||
+    "Business";
+
+  const scoreNum =
+    typeof r.score === "number"
+      ? r.score
+      : typeof r.score === "string"
+      ? Number(r.score)
+      : typeof r.opportunity_score === "number"
+      ? r.opportunity_score
+      : typeof r.opportunity_score === "string"
+      ? Number(r.opportunity_score)
+      : 75;
+
+  const score = Number.isFinite(scoreNum) ? Math.max(0, Math.min(100, Math.round(scoreNum))) : 75;
+
+  const description =
+    (typeof r.description === "string" && r.description) ||
+    (typeof r.summary === "string" && r.summary) ||
+    "No description available yet.";
+
+  const tagsRaw = r.tags ?? r.tag_list ?? r.keywords;
+  const tags = Array.isArray(tagsRaw)
+    ? tagsRaw.filter((t): t is string => typeof t === "string").slice(0, 8)
+    : typeof tagsRaw === "string"
+    ? tagsRaw
+        .split(/[,\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 8)
+    : [];
+
+  const investment =
+    (typeof r.investment === "string" && r.investment) ||
+    (typeof r.funding_required === "string" && r.funding_required) ||
+    (typeof r.capital_required === "string" && r.capital_required) ||
+    "—";
+
+  const roi =
+    (typeof r.roi === "string" && r.roi) ||
+    (typeof r.payback_period === "string" && r.payback_period) ||
+    (typeof r.be_period === "string" && r.be_period) ||
+    "—";
+
+  const risk = normalizeRisk(r.risk ?? r.risk_level);
+
+  const id =
+    (typeof r.id === "string" && r.id) ||
+    (typeof r.id === "number" && String(r.id)) ||
+    (typeof r.saved_id === "string" && r.saved_id) ||
+    `${idx + 1}-${name}`.toLowerCase().replace(/\s+/g, "-").slice(0, 64);
+
+  const lat = typeof r.lat === "number" ? r.lat : typeof r.latitude === "number" ? (r.latitude as number) : undefined;
+  const lng = typeof r.lng === "number" ? r.lng : typeof r.longitude === "number" ? (r.longitude as number) : undefined;
+
+  return { id, name, category, score, description, tags, investment, roi, risk, lat, lng };
+}
+
 export async function fetchRecommendations(location: string): Promise<ScanResult> {
   try {
     const res = await fetch(endpoints.recommendations, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ location }),
+      // Backend expects `area` (not `location`)
+      body: JSON.stringify({ area: location }),
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
     // Backend may return slightly different shapes — normalize defensively.
-    const recs: Recommendation[] = Array.isArray(data?.recommendations)
-      ? data.recommendations
+    const rawRecs = Array.isArray(data?.recommendations)
+      ? (data.recommendations as unknown[])
       : Array.isArray(data)
-      ? data
-      : mockRecommendations;
+      ? (data as unknown[])
+      : [];
+
+    const recs = rawRecs.map((r, i) => normalizeRecommendation(r, i)).filter((x): x is Recommendation => !!x);
     return {
       location,
       scannedAt: new Date().toISOString(),

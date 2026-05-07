@@ -31,7 +31,7 @@ export default function Contact() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
           {[
-            { Icon: Mail, label: "Email", v: "team@cravingcode.dev" },
+            { Icon: Mail, label: "Email", v: "support@starterscope.com" },
             { Icon: Phone, label: "Phone", v: "+91 98 7654 3210" },
             { Icon: MapPin, label: "HQ", v: "Bhopal, India" },
           ].map((c) => (

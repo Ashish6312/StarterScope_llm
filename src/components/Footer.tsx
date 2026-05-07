@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Hexagon, Github, Linkedin, Twitter } from "lucide-react";
+import { Hexagon, Github, Heart, Linkedin, Twitter } from "lucide-react";
 
 const productLinks = [
   { label: "Features", to: "/#features" },
@@ -35,9 +35,11 @@ export function Footer() {
               Neural intelligence for the next generation of Indian entrepreneurs.
             </p>
             <div className="mt-6 space-y-1">
-              <p className="font-mono text-xs text-text-muted">Built with ♥ by Team JAVA</p>
-              <p className="font-mono text-xs text-text-muted">
-                Cravingcode Technologies Pvt. Ltd.
+              <p className="font-mono text-xs text-text-muted flex items-center gap-1">
+                Built with{"  "}
+                <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" aria-hidden="true" />
+               
+                by Team JAVA
               </p>
             </div>
           </div>
@@ -100,7 +102,7 @@ export function Footer() {
 
         <div className="border-t border-border pt-6 mt-12 flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="font-body text-xs text-text-muted">
-            © 2025 Cravingcode Technologies Pvt. Ltd. All rights reserved.
+            © 2026 StarterScope. All rights reserved.
           </p>
           <p className="font-body text-xs text-text-muted">
             Privacy Policy · Terms of Service

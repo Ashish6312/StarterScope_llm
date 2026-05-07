@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { SearchProvider } from "@/context/SearchContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -14,14 +15,16 @@ export function ClientProviders({ children }: { children: ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
-          <SubscriptionProvider>
-            <SearchProvider>
-              <TooltipProvider>
-                {children}
-                <Sonner />
-              </TooltipProvider>
-            </SearchProvider>
-          </SubscriptionProvider>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <SearchProvider>
+                <TooltipProvider>
+                  {children}
+                  <Sonner />
+                </TooltipProvider>
+              </SearchProvider>
+            </SubscriptionProvider>
+          </AuthProvider>
         </LanguageProvider>
       </QueryClientProvider>
     </ThemeProvider>

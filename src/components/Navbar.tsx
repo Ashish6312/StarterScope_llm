@@ -5,6 +5,7 @@ import { Menu, X, ArrowRight, Hexagon } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { SsButton } from "./ss/SsButton";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
   { label: "Features", to: "/#features" },
@@ -34,6 +35,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, signOut, user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -58,45 +60,81 @@ export function Navbar() {
 
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
-            <RRNavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
+            item.to.startsWith("/#") ? (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cn(
                   "relative font-body text-sm transition-colors duration-200",
-                  isActive
+                  location.pathname === "/" && location.hash === item.to.slice(1)
                     ? "text-accent-emerald"
                     : "text-text-secondary hover:text-text-primary"
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {item.label}
-                  {isActive && (
-                    <motion.span
-                      layoutId="nav-underline"
-                      className="absolute -bottom-1 left-0 right-0 h-[2px] bg-accent-emerald"
-                    />
-                  )}
-                </>
-              )}
-            </RRNavLink>
+                )}
+              >
+                {item.label}
+                {location.pathname === "/" && location.hash === item.to.slice(1) && (
+                  <motion.span
+                    layoutId="nav-underline"
+                    className="absolute -bottom-1 left-0 right-0 h-[2px] bg-accent-emerald"
+                  />
+                )}
+              </Link>
+            ) : (
+              <RRNavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "relative font-body text-sm transition-colors duration-200",
+                    isActive ? "text-accent-emerald" : "text-text-secondary hover:text-text-primary"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {item.label}
+                    {isActive && (
+                      <motion.span
+                        layoutId="nav-underline"
+                        className="absolute -bottom-1 left-0 right-0 h-[2px] bg-accent-emerald"
+                      />
+                    )}
+                  </>
+                )}
+              </RRNavLink>
+            )
           ))}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
-          <Link to="/auth" className="hidden sm:inline-flex">
-            <SsButton variant="ghost" size="sm">
-              Sign In
-            </SsButton>
-          </Link>
-          <Link to="/dashboard" className="hidden sm:inline-flex">
-            <SsButton variant="primary" size="sm">
-              Get Started <ArrowRight className="w-4 h-4" />
-            </SsButton>
-          </Link>
+          {!isAuthenticated ? (
+            <>
+              <Link to="/auth" className="hidden sm:inline-flex">
+                <SsButton variant="ghost" size="sm">
+                  Sign In
+                </SsButton>
+              </Link>
+              <Link to="/dashboard" className="hidden sm:inline-flex">
+                <SsButton variant="primary" size="sm">
+                  Get Started <ArrowRight className="w-4 h-4" />
+                </SsButton>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/profile" className="hidden sm:inline-flex">
+                <SsButton variant="ghost" size="sm">
+                  {user?.name ? user.name.split(" ")[0] : "Profile"}
+                </SsButton>
+              </Link>
+              <button onClick={signOut} className="hidden sm:inline-flex">
+                <SsButton variant="primary" size="sm">
+                  Logout
+                </SsButton>
+              </button>
+            </>
+          )}
           <button
             onClick={() => setOpen(true)}
             aria-label="Open menu"
@@ -147,16 +185,33 @@ export function Navbar() {
                 ))}
               </nav>
               <div className="p-6 border-t border-border space-y-3">
-                <Link to="/auth" className="block">
-                  <SsButton variant="secondary" className="w-full">
-                    Sign In
-                  </SsButton>
-                </Link>
-                <Link to="/dashboard" className="block">
-                  <SsButton variant="primary" className="w-full">
-                    Get Started <ArrowRight className="w-4 h-4" />
-                  </SsButton>
-                </Link>
+                {!isAuthenticated ? (
+                  <>
+                    <Link to="/auth" className="block">
+                      <SsButton variant="secondary" className="w-full">
+                        Sign In
+                      </SsButton>
+                    </Link>
+                    <Link to="/dashboard" className="block">
+                      <SsButton variant="primary" className="w-full">
+                        Get Started <ArrowRight className="w-4 h-4" />
+                      </SsButton>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/profile" className="block">
+                      <SsButton variant="secondary" className="w-full">
+                        Profile
+                      </SsButton>
+                    </Link>
+                    <button onClick={signOut} className="block w-full">
+                      <SsButton variant="primary" className="w-full">
+                        Logout
+                      </SsButton>
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           </>

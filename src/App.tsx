@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ClientProviders } from "@/components/ClientProviders";
+import { RequireAuth } from "@/components/RequireAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
@@ -11,17 +12,32 @@ import BusinessPlan from "./pages/BusinessPlan";
 import Roadmap from "./pages/Roadmap";
 import Contact from "./pages/Contact";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import { Chatbot } from "@/components/chatbot/Chatbot";
 
 const App = () => (
   <ClientProviders>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
+        />
         <Route path="/business-details" element={<BusinessDetails />} />
         <Route path="/business-plan" element={<BusinessPlan />} />
         <Route path="/roadmap" element={<Roadmap />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route
+          path="/profile"
+          element={
+            <RequireAuth>
+              <Profile />
+            </RequireAuth>
+          }
+        />
         <Route path="/contact" element={<Contact />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/acquisition-tiers" element={<AcquisitionTiers />} />
@@ -29,6 +45,7 @@ const App = () => (
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Chatbot />
     </BrowserRouter>
   </ClientProviders>
 );

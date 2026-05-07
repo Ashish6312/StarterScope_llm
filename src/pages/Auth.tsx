@@ -1,15 +1,53 @@
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SsButton } from "@/components/ss/SsButton";
 import { SsInput } from "@/components/ss/SsInput";
 import { Hexagon } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AuthPage() {
   const [showPwd, setShowPwd] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = (location.state as { from?: string } | null)?.from || "/dashboard";
+
+  const submit = async () => {
+    if (!email.trim() || !password) {
+      toast.error("Please enter email and password");
+      return;
+    }
+    if (mode === "signup" && !name.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (mode === "signin") {
+        await signIn({ email: email.trim(), password });
+        toast.success("Signed in");
+      } else {
+        await signUp({ name: name.trim(), email: email.trim(), password });
+        toast.success("Account created");
+      }
+      navigate(from, { replace: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -69,10 +107,10 @@ export default function AuthPage() {
           className="w-full max-w-md lg:glass-card lg:p-10"
         >
           <h1 className="font-display font-extrabold text-3xl text-text-primary">
-            Welcome back
+            {mode === "signin" ? "Welcome back" : "Create your account"}
           </h1>
           <p className="mt-2 font-body text-base text-text-secondary">
-            Sign in to your intelligence platform
+            {mode === "signin" ? "Sign in to your intelligence platform" : "Start using your intelligence platform"}
           </p>
 
           <button
@@ -95,7 +133,20 @@ export default function AuthPage() {
           </div>
 
           <div className="space-y-4">
-            <SsInput leftIcon={<Mail className="w-4 h-4" />} placeholder="Email address" type="email" />
+            {mode === "signup" && (
+              <SsInput
+                placeholder="Full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            )}
+            <SsInput
+              leftIcon={<Mail className="w-4 h-4" />}
+              placeholder="Email address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
             <SsInput
               leftIcon={<Lock className="w-4 h-4" />}
               rightIcon={
@@ -105,22 +156,45 @@ export default function AuthPage() {
               }
               type={showPwd ? "text" : "password"}
               placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
             />
             <div className="text-right">
               <Link to="/auth" className="font-body text-[13px] text-accent-emerald hover:underline">
                 Forgot password?
               </Link>
             </div>
-            <SsButton variant="primary" className="w-full" onClick={() => toast.info("Auth not wired yet")}>
-              Sign In <LogIn className="w-4 h-4" />
+            <SsButton variant="primary" className="w-full" onClick={submit} disabled={loading}>
+              {loading ? "Please wait..." : mode === "signin" ? "Sign In" : "Sign Up"}{" "}
+              <LogIn className="w-4 h-4" />
             </SsButton>
           </div>
 
           <p className="font-body text-sm text-text-muted text-center mt-6">
-            Don't have an account?{" "}
-            <Link to="/auth" className="text-accent-emerald font-medium hover:underline">
-              Sign up free
-            </Link>
+            {mode === "signin" ? (
+              <>
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("signup")}
+                  className="text-accent-emerald font-medium hover:underline"
+                >
+                  Sign up free
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("signin")}
+                  className="text-accent-emerald font-medium hover:underline"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
           </p>
         </motion.div>
       </div>

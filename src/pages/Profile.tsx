@@ -43,7 +43,7 @@ export default function Profile() {
           </div>
           <div>
             <h2 className="font-display font-bold text-2xl text-text-primary">Jayesh Sharma</h2>
-            <p className="mt-1 font-mono text-[13px] text-text-muted">jayesh@cravingcode.dev</p>
+            <p className="mt-1 font-mono text-[13px] text-text-muted">jayesh@starterscope.com</p>
             <p className="mt-2 font-body text-sm text-text-secondary">Joined April 2024</p>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function Profile() {
           </div>
           <div>
             <label className="font-mono text-[11px] uppercase tracking-widest text-text-muted">Email</label>
-            <SsInput defaultValue="jayesh@cravingcode.dev" type="email" className="mt-2" />
+            <SsInput defaultValue="jayesh@starterscope.com" type="email" className="mt-2" />
           </div>
           <div className="flex justify-end pt-2">
             <SsButton variant="primary" onClick={() => toast.success("Profile saved")}>
