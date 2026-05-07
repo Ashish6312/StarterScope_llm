@@ -1,9 +1,9 @@
 const envApiBase = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL;
 
 // In local development, default to the local FastAPI server.
-// In production, default to the hosted API unless overridden by VITE_API_URL.
+// In production, empty string allows it to use the same domain (Vercel serverless function routing).
 const API_BASE =
-  envApiBase || (import.meta.env.DEV ? "http://localhost:8000" : "https://starterscope-api.onrender.com");
+  envApiBase || (import.meta.env.DEV ? "http://localhost:8000" : "");
 
 export const API_BASE_URL = API_BASE;
 
