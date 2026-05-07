@@ -7,26 +7,29 @@ import { SearchProvider } from "@/context/SearchContext";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const queryClient = new QueryClient();
 
 export function ClientProviders({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          <AuthProvider>
-            <SubscriptionProvider>
-              <SearchProvider>
-                <TooltipProvider>
-                  {children}
-                  <Sonner />
-                </TooltipProvider>
-              </SearchProvider>
-            </SubscriptionProvider>
-          </AuthProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <QueryClientProvider client={queryClient}>
+          <LanguageProvider>
+            <AuthProvider>
+              <SubscriptionProvider>
+                <SearchProvider>
+                  <TooltipProvider>
+                    {children}
+                    <Sonner />
+                  </TooltipProvider>
+                </SearchProvider>
+              </SubscriptionProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }

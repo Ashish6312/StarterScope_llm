@@ -772,6 +772,159 @@ class UserSync(BaseModel):
     name: Optional[str] = None
     image_url: Optional[str] = None
 
+@app.post("/api/auth/signup")
+async def auth_signup(payload: UserSignUp, db: Session = Depends(get_db)):
+    if not models_available:
+        return {"id": int(time.time()), "email": payload.email, "name": payload.name}
+    import models
+    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    if user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_pw = pwd_context.hash(payload.password)
+    new_user = models.User(
+        email=payload.email,
+        name=payload.name,
+        password_hash=hashed_pw,
+        auth_provider="email"
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    # Initialize basic free tier
+    try:
+        sub = models.UserSubscription(
+            user_id=new_user.id,
+            user_email=new_user.email,
+            plan_name="free",
+            plan_display_name="Market Explorer",
+            billing_cycle="monthly",
+            price=0.0,
+            status="active"
+        )
+        db.add(sub)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error creating default subscription: {e}")
+
+    return {
+        "id": new_user.id,
+        "email": new_user.email,
+        "name": new_user.name,
+        "image_url": new_user.image_url
+    }
+
+@app.post("/api/auth/signin")
+async def auth_signin(payload: UserSignIn, db: Session = Depends(get_db)):
+    if not models_available:
+        return {"id": int(time.time()), "email": payload.email, "name": payload.email.split('@')[0]}
+    
+    import models
+    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    
+    if not user:
+        # If it's a "google-auth" password fallback, we create the user on the fly.
+        if payload.password == "google-auth":
+            new_user = models.User(
+                email=payload.email,
+                name=payload.email.split('@')[0],
+                password_hash=pwd_context.hash(payload.password),
+                auth_provider="google"
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            
+            # Initialize basic free tier
+            try:
+                sub = models.UserSubscription(
+                    user_id=new_user.id,
+                    user_email=new_user.email,
+                    plan_name="free",
+                    plan_display_name="Market Explorer",
+                    billing_cycle="monthly",
+                    price=0.0,
+                    status="active"
+                )
+                db.add(sub)
+                db.commit()
+            except Exception as e:
+                pass
+            return {"id": new_user.id, "email": new_user.email, "name": new_user.name, "image_url": new_user.image_url}
+
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+        
+    if payload.password != "google-auth" and user.password_hash and not pwd_context.verify(payload.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+        
+    # Update last login
+    user.last_login = func.now()
+    if user.login_count is None:
+        user.login_count = 1
+    else:
+        user.login_count += 1
+    db.commit()
+    
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "image_url": user.image_url
+    }
+
+@app.post("/api/auth/sync")
+async def auth_sync(payload: UserSync, db: Session = Depends(get_db)):
+    if not models_available:
+        return {"id": int(time.time()), "email": payload.email, "name": payload.name}
+        
+    import models
+    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    
+    if not user:
+        new_user = models.User(
+            email=payload.email,
+            name=payload.name or payload.email.split('@')[0],
+            image_url=payload.image_url,
+            auth_provider="google"
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Initialize basic free tier
+        try:
+            sub = models.UserSubscription(
+                user_id=new_user.id,
+                user_email=new_user.email,
+                plan_name="free",
+                plan_display_name="Market Explorer",
+                billing_cycle="monthly",
+                price=0.0,
+                status="active"
+            )
+            db.add(sub)
+            db.commit()
+        except Exception as e:
+            logger.error(f"Error creating default subscription: {e}")
+            
+        return {"id": new_user.id, "email": new_user.email, "name": new_user.name, "image_url": new_user.image_url}
+        
+    # Update existing
+    if payload.name and not user.name:
+        user.name = payload.name
+    if payload.image_url and not user.image_url:
+        user.image_url = payload.image_url
+        
+    user.last_login = func.now()
+    if user.login_count is None:
+        user.login_count = 1
+    else:
+        user.login_count += 1
+    db.commit()
+    
+    return {"id": user.id, "email": user.email, "name": user.name, "image_url": user.image_url}
+
 
 class RecommendationRequest(BaseModel):
     area: str

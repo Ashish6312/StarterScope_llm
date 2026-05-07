@@ -13,6 +13,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   signIn: (params: { email: string; password: string }) => Promise<AuthUser>;
   signUp: (params: { name: string; email: string; password: string }) => Promise<AuthUser>;
+  googleSignIn: (payload: any) => Promise<AuthUser>;
   signOut: () => void;
 };
 
@@ -63,6 +64,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signUp({ name, email, password }) {
         const u = await postJson<AuthUser>(`${API_BASE_URL}/api/auth/signup`, { name, email, password });
+        setUser(u);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+        return u;
+      },
+      async googleSignIn(token) {
+        // Decode JWT token from Google (if we were using CredentialResponse)
+        // But since we fetch from Google API, token might just be the user object.
+        // Let's accept a user payload directly.
+        const payload = token;
+        
+        const u = await postJson<AuthUser>(`${API_BASE_URL}/api/auth/sync`, { 
+          email: payload.email,
+          name: payload.name,
+          image_url: payload.picture || payload.image_url
+        });
         setUser(u);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
         return u;

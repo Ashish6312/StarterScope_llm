@@ -27,9 +27,30 @@ const App = () => (
             </RequireAuth>
           }
         />
-        <Route path="/business-details" element={<BusinessDetails />} />
-        <Route path="/business-plan" element={<BusinessPlan />} />
-        <Route path="/roadmap" element={<Roadmap />} />
+        <Route
+          path="/business-details"
+          element={
+            <RequireAuth>
+              <BusinessDetails />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/business-plan"
+          element={
+            <RequireAuth>
+              <BusinessPlan />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/roadmap"
+          element={
+            <RequireAuth>
+              <Roadmap />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/profile"
           element={
@@ -40,7 +61,14 @@ const App = () => (
         />
         <Route path="/contact" element={<Contact />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/acquisition-tiers" element={<AcquisitionTiers />} />
+        <Route
+          path="/acquisition-tiers"
+          element={
+            <RequireAuth>
+              <AcquisitionTiers />
+            </RequireAuth>
+          }
+        />
         <Route path="/auth" element={<Auth />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />

@@ -8,6 +8,7 @@ import { Hexagon } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useGoogleLogin } from "@react-oauth/google";
 
 export default function AuthPage() {
   const [showPwd, setShowPwd] = useState(false);
@@ -16,7 +17,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, googleSignIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,6 +49,38 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      try {
+        // useGoogleLogin implicitly returns access_token, not credential. 
+        // We'll need to fetch user info from google API since it's access token based
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const payload = await res.json();
+        
+        const u = { 
+          id: payload.sub, 
+          email: payload.email, 
+          name: payload.name,
+          image_url: payload.picture
+        };
+        // Use our googleSignIn method to hit the sync endpoint
+        await googleSignIn(payload);
+        toast.success("Signed in with Google");
+        navigate(from, { replace: true });
+      } catch (e) {
+        toast.error("Failed to fetch Google user info");
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      toast.error("Google Login Failed");
+    }
+  });
 
   return (
     <div className="flex h-screen bg-background">
@@ -114,8 +147,9 @@ export default function AuthPage() {
           </p>
 
           <button
-            onClick={() => toast.info("Google OAuth wiring coming soon")}
-            className="mt-8 w-full h-14 rounded-xl border-2 border-border bg-surface hover:bg-elevated transition-colors flex items-center justify-center gap-3 font-body font-medium text-text-primary hover:border-accent-emerald/40 active:scale-[0.98]"
+            onClick={() => loginWithGoogle()}
+            disabled={loading}
+            className="mt-8 w-full h-14 rounded-xl border-2 border-border bg-surface hover:bg-elevated transition-colors flex items-center justify-center gap-3 font-body font-medium text-text-primary hover:border-accent-emerald/40 active:scale-[0.98] disabled:opacity-50"
           >
             <svg width="20" height="20" viewBox="0 0 48 48">
               <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4.5 24 4.5 12.7 4.5 3.5 13.7 3.5 25S12.7 45.5 24 45.5 44.5 36.3 44.5 25c0-1.5-.2-3-.4-4.5z"/>
