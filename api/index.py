@@ -778,7 +778,7 @@ async def auth_signup(payload: UserSignUp, db: Session = Depends(get_db)):
         # Check if DB is actually alive
         from database import check_db_connection
         if not check_db_connection():
-             raise HTTPException(status_code=500, detail="Database connection failed. Please ensure DATABASE_URL is set correctly in Vercel/Local environment.")
+            raise HTTPException(status_code=500, detail="Database connection failed. Please ensure DATABASE_URL is set correctly in Vercel/Local environment.")
 
         if not models_available:
             logger.warning("Models not available, returning mock signup")
@@ -840,7 +840,7 @@ async def auth_signin(payload: UserSignIn, db: Session = Depends(get_db)):
     try:
         from database import check_db_connection
         if not check_db_connection():
-             raise HTTPException(status_code=500, detail="Database connection failed. Please check your environment variables.")
+            raise HTTPException(status_code=500, detail="Database connection failed. Please check your environment variables.")
 
         if not models_available:
             return {"id": int(time.time()), "email": payload.email, "name": payload.email.split('@')[0]}
