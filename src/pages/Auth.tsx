@@ -71,8 +71,9 @@ export default function AuthPage() {
         await googleSignIn(payload);
         toast.success("Signed in with Google");
         navigate(from, { replace: true });
-      } catch (e) {
-        toast.error("Failed to fetch Google user info");
+      } catch (e: any) {
+        console.error("Google Login Error:", e);
+        toast.error(e.message || "Failed to fetch Google user info");
       } finally {
         setLoading(false);
       }

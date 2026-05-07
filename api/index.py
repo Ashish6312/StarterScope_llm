@@ -774,62 +774,145 @@ class UserSync(BaseModel):
 
 @app.post("/api/auth/signup")
 async def auth_signup(payload: UserSignUp, db: Session = Depends(get_db)):
-    if not models_available:
-        return {"id": int(time.time()), "email": payload.email, "name": payload.name}
-    import models
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
-    if user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    hashed_pw = pwd_context.hash(payload.password)
-    new_user = models.User(
-        email=payload.email,
-        name=payload.name,
-        password_hash=hashed_pw,
-        auth_provider="email"
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    # Initialize basic free tier
     try:
-        sub = models.UserSubscription(
-            user_id=new_user.id,
-            user_email=new_user.email,
-            plan_name="free",
-            plan_display_name="Market Explorer",
-            billing_cycle="monthly",
-            price=0.0,
-            status="active"
+        if not models_available:
+            logger.warning("Models not available, returning mock signup")
+            return {"id": int(time.time()), "email": payload.email, "name": payload.name}
+        
+        import models
+        user = db.query(models.User).filter(models.User.email == payload.email).first()
+        if user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        logger.info(f"Hashing password for {payload.email}")
+        hashed_pw = pwd_context.hash(payload.password)
+        
+        new_user = models.User(
+            email=payload.email,
+            name=payload.name,
+            password_hash=hashed_pw,
+            auth_provider="email"
         )
-        db.add(sub)
+        db.add(new_user)
         db.commit()
-    except Exception as e:
-        logger.error(f"Error creating default subscription: {e}")
+        db.refresh(new_user)
+        
+        logger.info(f"User created: {new_user.id}. Initializing subscription...")
+        
+        # Initialize basic free tier
+        try:
+            sub = models.UserSubscription(
+                user_id=new_user.id,
+                user_email=new_user.email,
+                plan_name="free",
+                plan_display_name="Market Explorer",
+                billing_cycle="monthly",
+                price=0.0,
+                status="active"
+            )
+            db.add(sub)
+            db.commit()
+        except Exception as e:
+            logger.error(f"Error creating default subscription: {e}")
+            db.rollback() # Important to rollback if subscription fails but user was already committed
 
-    return {
-        "id": new_user.id,
-        "email": new_user.email,
-        "name": new_user.name,
-        "image_url": new_user.image_url
-    }
+        return {
+            "id": new_user.id,
+            "email": new_user.email,
+            "name": new_user.name,
+            "image_url": new_user.image_url
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"CRITICAL AUTH SIGNUP ERROR: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @app.post("/api/auth/signin")
 async def auth_signin(payload: UserSignIn, db: Session = Depends(get_db)):
-    if not models_available:
-        return {"id": int(time.time()), "email": payload.email, "name": payload.email.split('@')[0]}
-    
-    import models
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
-    
-    if not user:
-        # If it's a "google-auth" password fallback, we create the user on the fly.
-        if payload.password == "google-auth":
+    try:
+        if not models_available:
+            return {"id": int(time.time()), "email": payload.email, "name": payload.email.split('@')[0]}
+        
+        import models
+        user = db.query(models.User).filter(models.User.email == payload.email).first()
+        
+        if not user:
+            # If it's a "google-auth" password fallback, we create the user on the fly.
+            if payload.password == "google-auth":
+                new_user = models.User(
+                    email=payload.email,
+                    name=payload.email.split('@')[0],
+                    password_hash=pwd_context.hash(payload.password),
+                    auth_provider="google"
+                )
+                db.add(new_user)
+                db.commit()
+                db.refresh(new_user)
+                
+                # Initialize basic free tier
+                try:
+                    sub = models.UserSubscription(
+                        user_id=new_user.id,
+                        user_email=new_user.email,
+                        plan_name="free",
+                        plan_display_name="Market Explorer",
+                        billing_cycle="monthly",
+                        price=0.0,
+                        status="active"
+                    )
+                    db.add(sub)
+                    db.commit()
+                except Exception as e:
+                    db.rollback()
+                return {"id": new_user.id, "email": new_user.email, "name": new_user.name, "image_url": new_user.image_url}
+
+            raise HTTPException(status_code=400, detail="Invalid credentials")
+            
+        if payload.password != "google-auth":
+            if not user.password_hash:
+                 raise HTTPException(status_code=400, detail="This account uses Google Login. Please use 'Continue with Google'.")
+            
+            if not pwd_context.verify(payload.password, user.password_hash):
+                raise HTTPException(status_code=400, detail="Invalid credentials")
+            
+        # Update last login
+        user.last_login = func.now()
+        if user.login_count is None:
+            user.login_count = 1
+        else:
+            user.login_count += 1
+        db.commit()
+        
+        return {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "image_url": user.image_url
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"CRITICAL AUTH SIGNIN ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+@app.post("/api/auth/sync")
+async def auth_sync(payload: UserSync, db: Session = Depends(get_db)):
+    try:
+        if not models_available:
+            return {"id": int(time.time()), "email": payload.email, "name": payload.name}
+            
+        import models
+        user = db.query(models.User).filter(models.User.email == payload.email).first()
+        
+        if not user:
+            logger.info(f"Syncing new Google user: {payload.email}")
             new_user = models.User(
                 email=payload.email,
-                name=payload.email.split('@')[0],
-                password_hash=pwd_context.hash(payload.password),
+                name=payload.name or payload.email.split('@')[0],
+                image_url=payload.image_url,
                 auth_provider="google"
             )
             db.add(new_user)
@@ -850,80 +933,29 @@ async def auth_signin(payload: UserSignIn, db: Session = Depends(get_db)):
                 db.add(sub)
                 db.commit()
             except Exception as e:
-                pass
+                logger.error(f"Error creating default subscription for google user: {e}")
+                db.rollback()
+                
             return {"id": new_user.id, "email": new_user.email, "name": new_user.name, "image_url": new_user.image_url}
-
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-        
-    if payload.password != "google-auth" and user.password_hash and not pwd_context.verify(payload.password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-        
-    # Update last login
-    user.last_login = func.now()
-    if user.login_count is None:
-        user.login_count = 1
-    else:
-        user.login_count += 1
-    db.commit()
-    
-    return {
-        "id": user.id,
-        "email": user.email,
-        "name": user.name,
-        "image_url": user.image_url
-    }
-
-@app.post("/api/auth/sync")
-async def auth_sync(payload: UserSync, db: Session = Depends(get_db)):
-    if not models_available:
-        return {"id": int(time.time()), "email": payload.email, "name": payload.name}
-        
-    import models
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
-    
-    if not user:
-        new_user = models.User(
-            email=payload.email,
-            name=payload.name or payload.email.split('@')[0],
-            image_url=payload.image_url,
-            auth_provider="google"
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        
-        # Initialize basic free tier
-        try:
-            sub = models.UserSubscription(
-                user_id=new_user.id,
-                user_email=new_user.email,
-                plan_name="free",
-                plan_display_name="Market Explorer",
-                billing_cycle="monthly",
-                price=0.0,
-                status="active"
-            )
-            db.add(sub)
-            db.commit()
-        except Exception as e:
-            logger.error(f"Error creating default subscription: {e}")
             
-        return {"id": new_user.id, "email": new_user.email, "name": new_user.name, "image_url": new_user.image_url}
+        # Update existing
+        logger.info(f"Syncing existing Google user: {payload.email}")
+        if payload.name and not user.name:
+            user.name = payload.name
+        if payload.image_url and not user.image_url:
+            user.image_url = payload.image_url
+            
+        user.last_login = func.now()
+        if user.login_count is None:
+            user.login_count = 1
+        else:
+            user.login_count += 1
+        db.commit()
         
-    # Update existing
-    if payload.name and not user.name:
-        user.name = payload.name
-    if payload.image_url and not user.image_url:
-        user.image_url = payload.image_url
-        
-    user.last_login = func.now()
-    if user.login_count is None:
-        user.login_count = 1
-    else:
-        user.login_count += 1
-    db.commit()
-    
-    return {"id": user.id, "email": user.email, "name": user.name, "image_url": user.image_url}
+        return {"id": user.id, "email": user.email, "name": user.name, "image_url": user.image_url}
+    except Exception as e:
+        logger.error(f"CRITICAL AUTH SYNC ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error (Sync): {str(e)}")
 
 
 class RecommendationRequest(BaseModel):
