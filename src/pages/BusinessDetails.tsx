@@ -49,7 +49,7 @@ export default function BusinessDetails() {
       >
         <Link
           to="/dashboard"
-          className="inline-flex items-center gap-2 font-body text-sm text-text-secondary hover:text-text-primary transition-colors"
+          className="inline-flex items-center gap-2 font-body text-sm text-text-secondary hover:text-text-primary transition-colors no-print"
         >
           <ArrowLeft className="w-4 h-4" /> {t("backToResults")}
         </Link>
@@ -228,7 +228,7 @@ export default function BusinessDetails() {
               </ul>
             </div>
 
-            <div className="glass-card p-6 bg-accent-emerald-light border-accent-emerald/20">
+            <div className="glass-card p-6 bg-accent-emerald-light border-accent-emerald/20 no-print">
               <h3 className="font-display font-bold text-base text-text-primary">
                 {t("readyToStart")}
               </h3>
@@ -243,7 +243,7 @@ export default function BusinessDetails() {
               <SsButton
                 variant="ghost"
                 className="w-full mt-2"
-                onClick={() => toast.info(lang === "hi" ? "पीडीएफ निर्यात जल्द ही आ रहा है" : "PDF export coming soon")}
+                onClick={() => window.print()}
               >
                 <Download className="w-4 h-4" /> {t("downloadPdf")}
               </SsButton>

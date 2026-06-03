@@ -23,9 +23,10 @@ import { translations, Lang } from "@/utils/translations";
 interface DashboardChartsProps {
   recommendations: Recommendation[];
   lang: Lang;
+  isPrint?: boolean;
 }
 
-export function DashboardCharts({ recommendations, lang }: DashboardChartsProps) {
+export function DashboardCharts({ recommendations, lang, isPrint = false }: DashboardChartsProps) {
   const t = (key: keyof typeof translations["en"]) => {
     return translations[lang][key] || translations["en"][key];
   };
@@ -117,6 +118,144 @@ export function DashboardCharts({ recommendations, lang }: DashboardChartsProps)
     }
     return null;
   };
+
+  if (isPrint) {
+    return (
+      <div className="grid grid-cols-2 gap-4 bg-[#0A0A0A] text-[#FAFAFA] p-2">
+        {/* 1. ROI Trend Graph */}
+        <div className="border border-border bg-surface rounded-xl p-4 page-break-inside-avoid">
+          <div className="mb-2">
+            <h3 className="text-xs font-bold tracking-tight text-[#FAFAFA]">
+              📈 {t("roiLabel")} ({t("roi")} %)
+            </h3>
+            <p className="text-[10px] text-text-muted">
+              Comparison of expected returns across business vectors
+            </p>
+          </div>
+          <div className="h-[220px] flex items-center justify-center">
+            <LineChart width={330} height={200} data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#A1A1AA" }} />
+              <YAxis tick={{ fontSize: 9, fill: "#A1A1AA" }} unit="%" />
+              <Line
+                type="monotone"
+                dataKey="roi"
+                name="ROI Potential"
+                stroke="hsl(var(--accent-emerald))"
+                strokeWidth={2}
+                dot={{ r: 2.5 }}
+              />
+            </LineChart>
+          </div>
+        </div>
+
+        {/* 2. Market Demand Chart */}
+        <div className="border border-border bg-surface rounded-xl p-4 page-break-inside-avoid">
+          <div className="mb-2">
+            <h3 className="text-xs font-bold tracking-tight text-[#FAFAFA]">
+              📊 {t("demandIndex")} (0 - 100)
+            </h3>
+            <p className="text-[10px] text-text-muted">
+              Localized consumer interest & search volume gap score
+            </p>
+          </div>
+          <div className="h-[220px] flex items-center justify-center">
+            <BarChart width={330} height={200} data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#A1A1AA" }} />
+              <YAxis tick={{ fontSize: 9, fill: "#A1A1AA" }} />
+              <Bar dataKey="score" name="Demand Index" radius={[3, 3, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.score >= 90 ? "hsl(var(--accent-emerald))" : entry.score >= 75 ? "hsl(var(--vivid-blue))" : "hsl(var(--vivid-amber))"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </div>
+        </div>
+
+        {/* 3. Investment vs Revenue Chart */}
+        <div className="border border-border bg-surface rounded-xl p-4 page-break-inside-avoid">
+          <div className="mb-2">
+            <h3 className="text-xs font-bold tracking-tight text-[#FAFAFA]">
+              💰 Capital Cost vs Potential Revenue (₹ Lakhs)
+            </h3>
+            <p className="text-[10px] text-text-muted">
+              Side-by-side view of upfront capex and estimated yearly returns
+            </p>
+          </div>
+          <div className="h-[220px] flex items-center justify-center">
+            <BarChart width={330} height={200} data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#A1A1AA" }} />
+              <YAxis tick={{ fontSize: 9, fill: "#A1A1AA" }} />
+              <Legend verticalAlign="top" height={24} wrapperStyle={{ fontSize: 9, color: "#A1A1AA" }} />
+              <Bar dataKey="investment" name="Capex" fill="hsl(var(--vivid-blue))" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="revenue" name="Est. Revenue" fill="hsl(var(--accent-emerald))" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </div>
+        </div>
+
+        {/* 4. Competitor Analysis Graph */}
+        <div className="border border-border bg-surface rounded-xl p-4 page-break-inside-avoid">
+          <div className="mb-2">
+            <h3 className="text-xs font-bold tracking-tight text-[#FAFAFA]">
+              🛡️ Competitor Density Indicator
+            </h3>
+            <p className="text-[10px] text-text-muted">
+              Estimated active players in the target geographical radius
+            </p>
+          </div>
+          <div className="h-[220px] flex items-center justify-center">
+            <BarChart width={330} height={200} data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#A1A1AA" }} />
+              <YAxis tick={{ fontSize: 9, fill: "#A1A1AA" }} />
+              <Bar dataKey="competitors" name="Competitor Density Index" fill="hsl(var(--vivid-violet))" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </div>
+        </div>
+
+        {/* 5. Success Probability Distribution */}
+        <div className="col-span-2 border border-border bg-surface rounded-xl p-4 page-break-inside-avoid !mt-4">
+          <div className="mb-2">
+            <h3 className="text-xs font-bold tracking-tight text-[#FAFAFA]">
+              🎯 Risk Assessment Breakdown
+            </h3>
+            <p className="text-[10px] text-text-muted">
+              Share of low, medium, and high difficulty implementations
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-12">
+            <PieChart width={160} height={160}>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={45}
+                outerRadius={65}
+                paddingAngle={4}
+                dataKey="value"
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+            </PieChart>
+            <div className="space-y-1.5">
+              {pieData.map((entry) => (
+                <div key={entry.name} className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: entry.color }} />
+                  <span className="text-[10px] text-text-secondary">
+                    {entry.name}: <span className="font-bold text-text-primary">{entry.value}</span> ({Math.round(entry.value / chartData.length * 100)}%)
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

@@ -74,7 +74,7 @@ export default function BusinessPlan() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <div className="sticky top-16 z-40 bg-surface/80 backdrop-blur-xl border-b border-border">
+      <div className="sticky top-16 z-40 bg-surface/80 backdrop-blur-xl border-b border-border no-print">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-display font-bold text-base sm:text-lg text-text-primary">
@@ -95,7 +95,7 @@ export default function BusinessPlan() {
             <SsButton
               variant="primary"
               size="sm"
-              onClick={() => toast.info(lang === "hi" ? "पीडीएफ निर्यात जल्द ही आ रहा है" : "PDF export coming soon")}
+              onClick={() => window.print()}
             >
               <Download className="w-4 h-4" /> {t("exportPdf")}
             </SsButton>
